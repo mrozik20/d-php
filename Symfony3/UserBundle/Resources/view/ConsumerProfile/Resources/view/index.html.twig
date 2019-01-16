@@ -1,0 +1,133 @@
+{% extends '::layout.html.twig' %}
+
+{% trans_default_domain 'UserBundle' %}
+
+{% import "macro.html.twig" as macros %}
+
+{% block content %}
+<div class="col-xl-3 col-md-3 consumer-widget consumer-container">
+    <div class="widget widget-05 has-shadow activity-user-details">
+        <div class="widget-body no-padding hidden">
+            <div class="edit-box-consumer-profile">
+            <a href="#" class="edit-author consumer-profile-edit" data-url="{{ path('consumer_add', {'subdomain': app.user.getInstance.getSubdomain(), 'author': consumer.getId()}) }}">
+                <i class="la la-edit edit"></i>
+            </a>
+            </div>
+            {% if isCustomerSendMail(consumer) %}
+            <div class="black-list-icon">
+                <a href="#" class="ti ti-email mail open-modal-mail-author" data-author="{{consumer.getId()}}" data-url="{{path('consumer-profile_mail_reply_form',{'consumer': consumer.getId(), 'subdomain': app.user.getInstance.getSubdomain()})}}"></a>
+            </div>
+            {% endif %}
+            <a class="author-avatar-url" href="{{ path('consumer-profile_index', {'subdomain': app.user.getInstance.getSubdomain(), 'consumer': consumer.getId()}) }}">
+                <div class="author-avatar">
+                    <div id="indicatorContainerWrap">
+                        <div id="indicatorContainer" data-percent="{{consumer.getInfluenceScore()|default(0)}}" class="progress-circle" data-toggle="tooltip" title="{{ 'list.influenceScore'|trans }}">
+                            <img src="{{ consumer.getViewAvatar()|default(asset('/img/customer.png')) }}" class="img-fluid rounded-circle" id="" />
+                        </div>
+                    </div>
+                </div>
+            </a>
+            <div class="author-name">
+                {{consumer.getFullName()}}
+                {% if consumer.getGender() or consumer.getAge() or consumer.getCity() %}
+                <div class="social-stats">
+                    <div class="row d-flex justify-content-between">
+                        <div class="col-4 text-center">
+                            {% if consumer.getGender() %}
+                            <div class="heading">{{('user.profile.' ~ consumer.getGender())|trans}}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-4 text-center">
+                            {% if consumer.getAge() %}
+                            <div class="heading">{{consumer.getAge()}} {{'user.profile.age'|trans}}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-4 text-center">
+                            {% if consumer.getCity() %}
+                            <div class="heading">{{consumer.getCity()}}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="author-name email-address">
+                {% if consumer.getMail() %}
+                <div class="social-stats">
+                    <div class="row d-flex justify-content-between">
+                        <div class="col-12 text-center">
+                            <div class="heading">{{ consumer.getMail() }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="row no-margin justify-content-center">
+            {% set userStatus = consumer.getUserStatus() %}
+            <div class="user-status">{{status[userStatus]}}</div>
+        </div>
+        <div class="widget">
+            <div class="widget-body p-0">
+                <div class="tab-content pt-3 tags-content">
+                    <div class="tab-pane fade show active" id="g-tab-1" role="tabpanel" aria-labelledby="general-tab-1">
+                        <div id="accordion-activity-user-details-general-" class="accordion-icon user-details-accordion icon-01">
+                            <div class="widget">
+                                <a class="card-header d-flex align-items-center align-items-center tags-header collapsed" href="#tags-" data-toggle="collapse">
+                                    <div class="card-title">{{ 'consumer.list.tags'|trans }} (<span class="tags-count">{{ consumer.getTags()|length }}</span>)</div>
+                                    <div class="add-accordion-tag-block btn">+
+                                        {{"user.profile.addtag"|trans([], 'UserBundle')}}
+                                        <input type="text" class="hidden" data-container="#tags-" data-user="tags-user-{{ consumer.getId() }}" data-ajaxurl="{{path('consumer-profile_tags_ajax', {'subdomain': app.user.getInstance.getSubdomain(), 'consumer': consumer.getId()})}}" data-addurl="{{path('consumer-profile_tags_add', {'subdomain': app.user.getInstance.getSubdomain(), 'consumer': consumer.getId()})}}">
+                                    </div>
+                                </a>
+                                <div id="tags-" class="card-body collapse pt-0 consumer-avatar-box-tags tags-user-{{ consumer.getId() }}" data-parent="#accordion-activity-user-details-general-" data-url="{{path('consumer-profile_tags_del', {'subdomain': app.user.getInstance.getSubdomain(), 'consumer': consumer.getId()})}}">
+                                    {% for tag in consumer.getTags() %}
+                                        <div class="btn btn-outline-primary m-1">
+                                            <span>{{tag.name}}</span>
+                                            <a href="#" class="del-accordion-tag" data-id="{{tag.id}}"><img src="{{ asset('img/x-small.png') }}" class="x-tag-image" alt=""></a>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <a class="card-header collapsed d-flex align-items-center align-items-center" href="#notes-" data-toggle="collapse">
+                                    <div class="card-title">{{ 'notes'|trans }} (<span class="notes-count">{{ consumer.getNotes()|length }}</span>)</div>
+                                    <div class="add-accordion-notes-block btn"
+                                        data-user="{{ consumer.getId() }}"
+                                        data-url="{{path('consumer-profile_notes_add',{'subdomain': app.user.getInstance.getSubdomain(), 'consumer': '__id__' })}}"
+                                    >
+                                        + {{ 'add_note'|trans([], 'UserBundle') }}
+                                        <input type="text" class="hidden" data-container="#notes-" data-user="notes-user-{{ consumer.getId() }}" data-addurl="{{path('consumer-profile_notes_add',{'subdomain': app.user.getInstance.getSubdomain(), 'consumer': consumer.getId()})}}">
+                                    </div>
+                                </a>
+                                <div id="notes-" class="card-body collapse pt-0 consumer-avatar-box-notes notes-user-{{ consumer.getId() }}" data-parent="#accordion-activity-user-details-general-">
+                                    <div class="notes">
+                                    {% for note in consumer.getNotes() %}
+                                        <div class="col-md-12 note-item" data-id="{{ note.id }}">
+                                            <span>{{ note.content }}</span>
+                                        </div>
+                                    {% endfor %}
+                                    </div>
+                                </div>
+                                <a class="card-header d-flex align-items-center align-items-center collapsed" href="#company-" data-toggle="collapse">
+                                    <div class="card-title">{{ 'company.name'|trans }} (<span class="tags-count">{{ consumer.getCompanies()|length }}</span>)</div>
+                                    <div class="add-accordion-tag-block btn">+
+                                        {{"company.add"|trans([], 'UserBundle')}}
+                                        <input type="text" data-type="company" class="hidden" data-container="#company-" data-user="company-user-{{ consumer.getId() }}" data-ajaxurl="{{path('consumer-profile_company_ajax', {'subdomain': app.user.getInstance.getSubdomain(), 'consumer': consumer.getId()})}}" data-addurl="{{path('consumer-profile_company_add', {'subdomain': app.user.getInstance.getSubdomain(), 'consumer': consumer.getId()})}}">
+                                    </div>
+                                </a>
+                                <div id="company-" class="card-body collapse pt-0 consumer-avatar-box-company company-user-{{ consumer.getId() }}" data-parent="#accordion-activity-user-details-general-" data-url="{{path('consumer-profile_company_del', {'subdomain': app.user.getInstance.getSubdomain(), 'consumer': consumer.getId()})}}">
+                                    {% for company in consumer.getCompanies() %}
+                                        <div class="btn btn-outline-primary m-1">
+                                            <span>{{company.name}}</span>
+                                            <a href="#" data-type="company" class="del-accordion-tag" data-id="{{ company.id }}"><img src="{{ asset('img/x-small.png') }}" class="x-tag-image" alt=""></a>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+           </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

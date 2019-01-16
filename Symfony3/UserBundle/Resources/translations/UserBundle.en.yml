@@ -1,0 +1,46 @@
+session_expire_modal: 'Your session has expired. Log in again.'
+login: Log in
+widgets:
+    activity:
+        title: 'Activities left'
+main_menu:
+    crm:
+        add_companies_or_individuals: 'Add companies or individuals'
+    toggle_menu:
+        statistics: Statistics
+        profile: Profile
+        edit: 'Edit'
+        settings: Settings
+        logout: Logout
+    add_toggle_menu:
+        company_modal_link: "Add Company"
+        individual_modal_link: "Add Individual"
+user:
+    profile:
+        profileInfo: 'Profile Info'
+        editProfileInfo: 'Edit Profile Info'
+        name: 'Name'
+        surname: 'surname'
+        role: 'Role'
+        mail: 'E-mail'
+        channels: 'Channels'
+        notbuy: 'hasn''t bought anything from you, yet.'
+        notview: 'hasn''t viewed anything from you, yet.'
+        notbuy_go: 'Go change it, tiger!'
+        first_name: 'first name'
+        last_name: 'last name'
+        password_first: 'password'
+        password_second: 'confirm password'
+        button_save: 'Save Changes'
+        button_cancel: 'Cancel'
+        male: male
+        female: female
+        age: y.o.
+        addtag: Add tag
+        addproduct: Add product
+        addcompany: Add company
+        agreeToProfililing: I agree to profiling
+        notice: Sorry, the statistics are temporarily unavailable, please try again later
+        notsuggestbuy: No idea what you could suggest %username% to buy yet.
+        nothing: 'Nothing to show yet'
+        mailFooter: 'Mail footer'

@@ -1,0 +1,60 @@
+{% extends '::layout.html.twig' %}
+
+{% trans_default_domain 'UserBundle' %}
+{% block headersection %}
+    {% include 'UserBundle:ConsumerProfile:header.html.twig' with {'consumer': consumer} %}
+    
+    <div class="container">
+        {% block menu %}
+            <div class="row user-navbar">
+                {{ knp_menu_render('AppBundle:Builder:consumerProfileMenu') }}
+            </div>
+            <div class="row">
+                <hr class="user-navbar-hr">
+            </div>
+        {% endblock %}
+    </div>
+    
+    <div class="container consumer-list-container">
+        <div id="result-contener">
+        
+            {% for note in notes %}
+                <div class="row no-padding archive-post-row">
+                    <div class="col-md-12 no-padding archive-post-container">
+                        <div class="row no-margin tags-and-post-row">
+                            <div class="col-md-12 archive-post no-padding">
+                                <div class="archive-post-box">
+                                    <div class="archive-post-time">{{note.getAddDate()|dateTextFormat}}</div>
+                                    <div class="archive-post-box-contain">
+                                        <img class="avatar-small img-circle" src="{{ note.getAddUser().getViewAvatar()|default(asset('/img/customer.png')) }}" alt="">
+                                        <div class="archive-post-text">
+                                            {{note.getContent()|raw|nl2br}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            
+        </div>
+    </div>
+{% endblock %}
+{% block javascripts %}
+    <script type="text/javascript">
+        $( function() {
+            $('.progress-circle').each(function () {
+                var percent = $(this).data('percent');
+                $(this).radialIndicator({
+                    barBgColor: '#ffffff',
+                    barWidth: 9,
+                    initValue: percent,
+                    roundCorner : true,
+                    percentage: false,
+                    displayNumber: false
+                });
+            });
+        });
+    </script>
+{% endblock %}

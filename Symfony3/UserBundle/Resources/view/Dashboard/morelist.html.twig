@@ -1,0 +1,163 @@
+{% trans_default_domain 'UserBundle' %}
+
+{% import "macro.html.twig" as macros %}
+{% for item in list %}
+    {% set levelClass = '' %}
+	{% set headerClass = '' %}
+	{% set footerClass = '' %}
+	{% set offset = '' %}
+	{% if item.getLevel() > 2 %}
+		{% set levelClass = 'reply' %}
+		{% set headerClass = 'reply-header' %}
+		{% set footerClass = 'reply-footer' %}
+		{% set offset = 'offset-md-1 col-md-11 no-padding-left' %}
+	{% elseif item.getLevel() == 2 %}
+		{% set levelClass = 'comments' %}
+		{% set headerClass = 'comments-header' %}
+		{% set footerClass = 'comments-footer' %}
+	{% elseif item.getLevel() == 1 %}
+		{% set levelClass = '' %}
+		{% set headerClass = 'widget-header' %}
+		{% set footerClass = 'widget-footer' %}
+	{% else %}
+		{% set levelClass = '' %}
+	{% endif %}
+    <div class="col-md-12 no-padding post-bg {{ levelClass }}-{{item.getId()}} show-more-content test5">
+        <div class="{{ levelClass }} archive-post-box sub-reply-post {% if (item.getChannel().getType() == item.getChannel().getTypesByName('FB') and item.getType()==2) %} msg-email-reply-actions {% endif %} {% if item.replyPostUser() or checkIsChannelAuthor(item) %}moderator-post-row{% endif %}">
+			<div class="{% if item.getLevel() > 2 and not (item.replyPostUser() or checkIsChannelAuthor(item)) %} {{ offset }} {% endif %} {{ headerClass }} d-flex">
+				<div class="d-block {% if item.getLevel() <= 2 %} text-center {% endif %}user-image show-more-user-container">
+					{% if item.getPhoto() %}
+						<img class="rounded-circle {% if not item.replyPostUser() and not checkIsChannelAuthor(item) %} sentiment-{{ item.getSentiment()|default(1) }} {% endif %}" src="{{ item.getPhoto() }}" alt="" onError="this.onerror = null; this.src = '{{ asset('/img/customer.png') }}'" />
+					{% elseif item.replyPostUser() %}
+						<img class="rounded-circle {% if not item.replyPostUser() and not checkIsChannelAuthor(item) %} sentiment-{{ item.getSentiment()|default(1) }} {% endif %}" src="{{ item.replyPostUser().getViewAvatar()|default(asset('/img/customer.png')) }}" alt="" onError="this.onerror = null; this.src = '{{ asset('/img/customer.png') }}'" />
+					{% else %}
+						<a href="{{ path('consumer-profile_index', {'subdomain': app.user.getInstance.getSubdomain(), 'consumer': item.getAuthor().getId()}) }}">
+							<img class="rounded-circle {% if not item.replyPostUser() and not checkIsChannelAuthor(item) %} sentiment-{{ item.getSentiment()|default(1) }} {% endif %}" src="{{ item.getAuthor().getViewAvatar()|default(asset('/img/customer.png')) }}" alt="" onError="this.onerror = null; this.src = '{{ asset('/img/customer.png') }}'" />
+						</a>
+					{% endif %}
+					{% if not item.replyPostUser() and not checkIsChannelAuthor(item) %}
+    					<!-- email / msg sentiment -->
+    					<div class="dropdown sentiment-info mr-auto dropdown-toggle {% if item.getLevel() < 2 %} text-center {% endif %}msg-email-sentiment">
+    						{% set sentimentSet = 'list.sentiment_type.sentiment_' ~ item.getSentiment() %}
+    						<span class="sentiment-type sentiment-{{ item.getSentiment()|default(1) }}">{{ sentimentSet|trans({}, 'UserBundle') }}</span>
+    						<div class="dropdown-menu">
+    							<a href="#" class="dropdown-item change-postSentiment text-center" data-url="{{path('dashboard_change_sentiment',{'subdomain': app.user.getInstance.getSubdomain(), 'post': item.getId(), 'sentiment': 0})}}">
+    								<span class="sentiment-type sentiment-0" data-type="sentiment-0" data-template="<span class='sentiment-type sentiment-0'>{{ 'list.sentiment_type.sentiment_0'|trans({}, 'UserBundle') }}</span>">{{ 'list.sentiment_type.sentiment_0'|trans({}, 'UserBundle') }}</span>
+    							</a>
+    							<a href="#" class="dropdown-item change-postSentiment text-center" data-url="{{path('dashboard_change_sentiment',{'subdomain': app.user.getInstance.getSubdomain(), 'post': item.getId(), 'sentiment': 1})}}">
+    								<span class="sentiment-type sentiment-1" data-type="sentiment-1" data-template="<span class='sentiment-type sentiment-1'>{{ 'list.sentiment_type.sentiment_1'|trans({}, 'UserBundle') }}</span>">{{ 'list.sentiment_type.sentiment_1'|trans({}, 'UserBundle') }}</span>
+    							</a>
+    							<a href="#" class="dropdown-item change-postSentiment text-center" data-url="{{path('dashboard_change_sentiment',{'subdomain': app.user.getInstance.getSubdomain(), 'post': item.getId(), 'sentiment': 2})}}">
+    								<span class="sentiment-type sentiment-2" data-type="sentiment-2" data-template="<span class='sentiment-type sentiment-2'>{{ 'list.sentiment_type.sentiment_2'|trans({}, 'UserBundle') }}</span>">{{ 'list.sentiment_type.sentiment_2'|trans({}, 'UserBundle') }}</span>
+    							</a>
+    						 </div>
+    					</div>
+					{% endif %}
+				</div>
+				<div class="d-flex flex-column archive-post-box-contain title-container {% if checkIsChannelAuthor(item) %}text-right{%endif%}">
+				    {% if not item.replyPostUser() and not checkIsChannelAuthor(item) %}
+    					<div class="d-flex align-items-center activity-notes-tags-row">
+                            <div class="col-md-6 d-flex no-padding justify-content-start custom-title-name">
+                                {% set userEmail = item.getAuthor().getMail() %}
+                                {% set userFullName = item.getAuthor().getFullName() %}
+                                {% if item.getChannel().getType() == item.getChannel().getTypesByName('MAIL') or (item.getChannel().getType() == item.getChannel().getTypesByName('FB') and item.getType()==2) %}
+                                    {{ userEmail }}
+                                    {% if userEmail and userFullName %} / {% endif %}
+                                    {{ userFullName }}
+                                {% else %}
+                                    {{ userFullName }}
+                                {% endif %}
+    						</div>
+    						<div class="col-md-6 d-flex no-padding justify-content-end activity-tags-notes-container">
+    						    <div class="d-flex flex-wrap pr-2 activity-tags-list"  data-postid="{{ item.getId() }}">
+                                {% for postTag in item.getPostTags() %}
+    						        <div class="btn btn-outline-primary mr-1 mb-1">
+                                        <span>{{ postTag.getName() }}</span>
+                                    </div>
+                                    {% endfor %}
+    						    </div>
+    						    <div class="d-flex notes-attachments">
+    						        <a href="#" class="d-flex align-items-center justify-content-center rounded-circle show-notes {% if item.getPostNotes()|length == 0 %}hide-notes{% endif %} {% if item.existUnreadPostNotes() == true %} active {% endif %} post-notes-read-modal-open" data-toggle="tooltip" title="{{ 'list.show_notes'|trans }} "  data-url="{{ path('note_tags_post_add', { 'subdomain': app.user.getInstance.getSubdomain(), 'post': item.getId() }) }}">
+    						            <i class="la la-bell"></i>
+    						        </a>
+                                    {% set attachments = item.getPostAttachments() %}
+						            {% set linkAttachments = item.getLinkAttatchment() %}
+						            {% set shareLinkAttachments = item.getShareLink() %}
+							        {% if attachments|length > 0 or linkAttachments != '' or shareLinkAttachments != '' %}
+								        <div class="show-attachments-container">
+								            {% if attachments|length == 1 or linkAttachments != '' or shareLinkAttachments != '' %}
+								                {% if attachments|length == 1 %}
+								                    {% set attachment = attachments[0] %}
+								                    {% set url = attachment.getUrl() %}
+								                {% elseif linkAttachments != '' %}
+								                    {% set url = linkAttachments %}
+							                    {% elseif shareLinkAttachments != '' %}
+							                        {% set url = shareLinkAttachments %}
+							                    {% endif %}
+
+                                                {% if attachments|length == 1 %}
+    								                {% if attachment.getType() == 5 %}
+        								                {% set url = path('attachment', { 'post_id': item.getId(), 'attachment_id': attachment.getId(), 'name': attachment.getUrl(), 'for': 'download' }) %}
+    								                {% endif %}
+								                {% endif %}
+
+								                <a href="{{ url }}" target="_blank" class="d-flex align-items-center justify-content-center rounded-circle show-attachments" data-toggle="tooltip" title="{{ 'list.show_attachments'|trans }}">
+                                                    <i class="la la-paperclip"></i>
+        								        </a>
+								            {% else %}
+        								        <a href="#" class="d-flex align-items-center justify-content-center rounded-circle show-attachments show-multiple-attachments" data-toggle="tooltip" title="{{ 'list.show_attachments'|trans }}">
+                                                    <i class="la la-paperclip"></i>
+        								        </a>
+                                                <div class="activity-show-attachments popover bs-popover-top">
+        											<img src="{{ asset('img/x-small.png') }}" class="close-activity-attachments-content" />
+                                                    {{ getPostContentAttatchment(item)|raw }}
+        										</div>
+    										{% endif %}
+								        </div>
+							        {% endif %}
+    						    </div>
+    						</div>
+    					</div>
+					{% endif %}
+					<div class="title custom-title-content archive-post-text no-padding {% if not checkIsChannelAuthor(item) %} col-md-offset-right-1 {% else %}offset-md-1{% endif %} {% if item.replyPostUser() %}text-right{% endif %}">
+						{{item.getContent()|raw|nl2br}}
+					</div>
+                    {% if not item.replyPostUser() and not checkIsChannelAuthor(item) and not (item.getChannel().getType() == item.getChannel().getTypesByName('MAIL') or (item.getChannel().getType() == item.getChannel().getTypesByName('FB') and item.getType() == 2)) %}
+    					<div class="d-flex align-items-center activity-notes-tags-row">
+        					<div class="col-md-10 d-flex no-padding justify-content-start">
+                                <div class="d-flex justify-content-start">
+        							<div class="meta">
+        								<ul class="d-flex align-items-baseline flex-wrap">
+                                            <li class="d-flex align-items-center {% if item.getCountChildrenPost() == 0 and item.getCountReaction() == 0 and item.getHotThread() < 50 %}mt-2{% endif %}">
+                                                <a class="time" href="{{item.getLink()}}" target="_blank">{{item.getCreatedTime()|dateTextFormat}}</a>
+                                            </li>
+                                            {% if item.getCountChildrenPost() > 0 %}
+                                                <li class="d-flex align-items-center">
+                                                    <i class="far fa-comment-alt"></i><span class="numb">{{ item.getCountChildrenPost() }}</span>
+                                                </li>
+                                            {% endif %}
+        									{% if item.getCountReaction() > 0 %}
+                                                <li class="d-flex align-items-center">
+                                                    <i class="la la-heart"></i><span class="numb">{{ item.getCountReaction() }}</span>
+                                                </li>
+                                            {% endif %}
+                                            {% if item.getHotThread() >= 50 %}
+        										<li class="d-flex align-items-center">
+                                                    <a href="{{ path('threads', { 'subdomain': app.user.getInstance.getSubdomain(), 'thread': item.getId() }) }}"><i class="la la-fire"></i></a>
+        										</li>
+        									{% endif %}
+        								</ul>
+        							</div>
+        						</div>
+        					</div>
+    					</div>
+					{% else %}
+                        <div class="time {% if not item.replyPostUser() and not checkIsChannelAuthor(item)%}mt-2{% endif %} archive-post-time {% if item.replyPostUser() %}d-flex flex-row-reverse text-right{% endif %}">
+    						 <a href="{{item.getLink()}}" target="_blank">{{item.getCreatedTime()|dateTextFormat}}</a>
+    					</div>
+					{% endif %}
+				</div>
+			</div>
+        </div>
+    </div>
+{% endfor %}

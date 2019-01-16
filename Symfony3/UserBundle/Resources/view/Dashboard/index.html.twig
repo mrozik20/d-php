@@ -1,0 +1,1275 @@
+{% extends '::layout.html.twig' %}
+
+{% trans_default_domain 'UserBundle' %}
+
+{% block headersection %}
+    <div class="col-xl-12 col-md-12 col-lg-12">
+        <div class="widget has-shadow charts-background">
+            <div class="row flex-row">
+                <div class="col-xl-10 col-lg-9 col-md-9">
+                    <div class="widget-body">
+                        <div class="row header-img-container ">
+                            <div id="chart-dashboard-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-lg-3 col-md-3 no-padding activity-list-container">
+                    <div class="widget widget-11 widget-activity widget-body-activity custom-dashboard">
+                        <!-- Begin Widget Header -->
+                        <div class="widget-header bordered d-flex align-items-center mb-2">
+                            <h2>{{ 'widgets.activity.title'|trans }}</h2>
+                        </div>
+                        <!-- End Widget Header -->
+                        <!-- Begin Widget Body -->
+                        <div id="activity-count-contener" class="widget-body p-0 widget-scroll" style="max-height:192px;">
+                            {{countActivity|raw}}
+                        </div>
+                        <!-- End Widget Body -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="col-xl-12 col-md-12 flex-direction-row">
+    <div id="result-contener" class="row flex-row flex-grow-1"></div>
+</div>
+{% endblock %}
+{% block modal %}
+    <div id="hide-post" class="modal fade" tabindex="-1" aria-hidden="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title text-center">
+                        {{ 'owner_tooltip.modal_email.title'|trans }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="close-post" type="button" data-dismiss="modal" class="btn btn-success">
+                        <i class="la la-check"></i>
+                        {{ 'owner_tooltip.modal_email.button_yes'|trans }}
+                    </button>
+                    <button type="button" data-dismiss="modal" class="btn btn-danger">
+                        <i class="la la-ban"></i>{{ 'add_representative_modal.button_no'|trans }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if typeView=='dashboard' and megreclients|length>0 %}
+        <div class="modal fade" id="modal_merge_accounts" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">close</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="container no-padding">
+                            <div class="row">
+                                <div class="col mt-3 mb-3 text-center">
+                                    {{ 'merge_authors.modal.description'|trans }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="container no-padding author0">
+                                        <div class="row">
+                                            <div class="col mt-3 mb-3 author-avatar-container text-center">
+                                                <div class="col-12">
+                                                    <img src="" class="rounded-circle useravatar" style="width: 100px; min-width: 60px;" onError="this.onerror = null; this.src = '{{ asset('/img/customer.png') }}'">
+                                                </div>
+                                                <div class="col-12 mt-3 author-name-container">
+                                                    <span></span>
+                                                </div>
+                                                <div class="col-12 author-merge-purpose">
+                                                    <div class="email"></div>
+                                                    <div class="phone"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="container no-padding author1">
+                                        <div class="row">
+                                            <div class="col mt-3 mb-3 author-avatar-container text-center">
+                                                <div class="col-12">
+                                                    <img src="" class="rounded-circle useravatar" style="width: 100px; min-width: 60px;" onError="this.onerror = null; this.src = '{{ asset('/img/customer.png') }}'">
+                                                </div>
+                                                <div class="col-12 mt-3 author-name-container">
+                                                    <span></span>
+                                                </div>
+                                                <div class="col-12 author-merge-purpose">
+                                                    <div class="email"></div>
+                                                    <div class="phone"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 text-center">
+                                    <div class="order"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="button_merge_accounts" type="button" data-dismiss="modal" class="btn btn-primary">{{ 'merge_authors.modal.button_merge'|trans }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% set customLoader = true %}
+
+{% block javascripts %}
+    <script type="text/javascript">
+        $('.loader-modal').show();
+
+        var notyReload = null;
+
+        var ajaxCounter={'activity':false};
+        var urlDefault='{% if typeView=='archive' %}{{path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params'))}}{% else %}{{path("dashboard_list",{'subdomain': app.user.getInstance.getSubdomain()})}}{% endif %}';
+        function loadAjax(type){
+            if(ajaxCounter[type] == false){
+                ajaxCounter[type] = true;
+            }
+            var hideLoader = true;
+            $.each(ajaxCounter, function(i,v){
+                if(v == false){
+                    hideLoader = false;
+                }
+            });
+
+            if(hideLoader){
+                $('.loader-modal').hide();
+            }
+        }
+
+        var listAjax;
+        var listAjaxtimer;
+        var CheckAjaxTimer = null;
+        var checkAjax;
+
+        function loadActivityList(){
+            $.ajax({
+                async: true,
+                cache: false,
+                type: 'GET',
+                url: '{{path("dashboard_activity",{'subdomain': app.user.getInstance.getSubdomain()})}}',
+                success: function (html) {
+                    $("#activity-count-contener").html(html);
+                },
+                error: function (xhr, status, text) {
+                    console.log(xhr.responseText);
+                },
+            });
+        }
+
+        function setTimerList(){
+            if (CheckAjaxTimer) {
+            } else {
+                {% if typeView=='dashboard' %}
+                CheckAjaxTimer = setTimeout(sendAjaxCheckDashboard, 30000);
+                {% elseif typeView=='archive' %}
+                CheckAjaxTimer = setTimeout(function(){
+                    sendAjax(false, true);
+                }, 2000);
+                {% endif %}
+            }
+        }
+
+        function loadiframe(){
+            if($("#result-contener iframe.lazyload").length>0){
+                var el = $("#result-contener iframe.lazyload:first");
+                el.removeClass("lazyload").attr("src",el.data("src"));
+                if(!listAjax || (listAjax && listAjax.readyState == 4)){
+                    el.on('load', function(){
+                        loadiframe();
+                    });
+                }
+            }
+        }
+
+        {% if typeView=='dashboard' %}
+        function sendAjaxCheckDashboard(){
+            CheckAjaxTimer = null;
+            if(checkAjax && checkAjax.readyState != 4){
+                checkAjax.abort();
+            }
+
+            var data = [];
+
+            $("#result-contener ").children("div").each(function(){
+                var tmp = $(this).attr("id");
+                const reg = /^post-/;
+                if(reg.test(tmp)){
+                    data.push(tmp.replace(reg, ''));
+                }
+            });
+
+            checkAjax = $.ajax({
+                async: true,
+                cache: false,
+                type: 'POST',
+                url: urlDefault,
+                data: {'list': data},
+                dataType: 'json',
+                beforeSend: function(xhr, settings) {
+                    showLoader()
+                },
+                complete: function() {
+                    hideLoader();
+                },
+                success: function ($dat) {
+                    if ($dat['status'] == 'reload' && notyReload == null ) {
+                        notyReload = true;
+                        var tmp = new Noty({
+                            type: 'info',
+                            layout: 'topCenter',
+                            text: '{{'New activities available.'|trans}} <span class="reloadList" style="cursor: pointer;">{{'Reload'|trans}}</span>',
+                            closeWith: [ 'button'],
+                            callbacks: {
+                                afterClose: function() {
+                                    notyReload = null;
+                                }
+                            },
+                            animation: {
+                                open: 'animated bounceInDown', // Animate.css class names
+                                close: 'animated bounceOutUp' // Animate.css class names
+                            }
+                        }).show();
+
+                        var e = $('#'+tmp.id).find('.noty_body');
+                        e.click(function(){
+                            Noty.closeAll();
+                            clearTimeout(CheckAjaxTimer);
+                            sendAjax();
+                        });
+
+                    }
+                    setTimerList();
+                },
+                error: function (xhr, status, text) {
+                    console.log(xhr.responseText);
+                    hideLoader();
+                },
+            });
+        }
+        {% endif %}
+
+        function sendAjax(comment, moveToTop){
+            if(listAjax && listAjax.readyState != 4){
+                listAjax.abort();
+            }
+            {% if typeView=='dashboard' %}
+            listAjax = $.ajax({
+                async: true,
+                cache: false,
+                type: 'GET',
+                url: urlDefault,
+                beforeSend: function(xhr, settings) {
+                    showLoader()
+                },
+                complete: function() {
+                    hideLoader();
+                },
+                success: function (html) {
+                    loadActivityList();
+                    $("#result-contener").html(html);
+                    $('body > .tooltip').remove();
+                    $('.show-more-list').each(function(){
+                        $(this).data("text-more", $(this).html());
+                    });
+                    $('.progress-circle').each(function () {
+                        if($(this).data("lodingCircle") != "1") {
+                            $(this).data("lodingCircle", "1");
+                            var size = 135;
+                            if($(window).width() >= '1000' && $(window).width() <= '1366') {
+								size = 120;
+                            }
+                            $(this).circleProgress({
+                                value: $(this).data('percent') / 100,
+                                size: size,
+                                startAngle: -Math.PI / -4,
+                                thickness: 6,
+                                lineCap: 'round',
+                                emptyFill: '#ffffff',
+                                animation: false,
+                                fill: {
+                                    gradient: ['#30DAEA', '#707FEE']
+                                }
+                            });
+                        }
+                    });
+
+                    $('[data-toggle="tooltip"]').tooltip();
+                    $(".widget-scroll").getNiceScroll().resize();
+
+                    //attach atuosizer to textarea's
+                    autosize($('.new-reply-container .answer-contener textarea'));
+
+                    loadAjax('activity');
+
+                    if(comment == true) {
+                    	successNotification(translations.messages.add_reply_success_message);
+                    }
+
+                    if(moveToTop == true) {
+                    	$('html, body').scrollTop(0);
+                    }
+
+                    setTimerList();
+                    loadiframe();
+                },
+                error: function (xhr, status, text) {
+                    console.log(xhr.responseText);
+                    hideLoader();
+                    $("#result-contener").html(xhr.responseText);
+                },
+            });
+            {% elseif typeView=='archive' %}
+            listAjax = $.ajax({
+                async: true,
+                cache: false,
+                type: 'GET',
+                url: urlDefault,
+                beforeSend: function(xhr, settings) {
+                    showLoader()
+                },
+                complete: function() {
+                    hideLoader();
+                },
+                success: function (html) {
+                    loadActivityList();
+                    $("#result-contener").html(html);
+                    $('body > .tooltip').remove();
+                    $('.show-more-list').each(function(){
+                        $(this).data("text-more", $(this).html());
+                    });
+                    $('.progress-circle').each(function () {
+                        if($(this).data("lodingCircle") != "1") {
+                            $(this).data("lodingCircle", "1");
+                            var size = 135;
+                            if($(window).width() >= '1000' && $(window).width() <= '1366') {
+								size = 120;
+                            }
+                            $(this).circleProgress({
+                                value: $(this).data('percent') / 100,
+                                size: size,
+                                startAngle: -Math.PI / -4,
+                                thickness: 6,
+                                lineCap: 'round',
+                                emptyFill: '#ffffff',
+                                animation: false,
+                                fill: {
+                                    gradient: ['#30DAEA', '#707FEE']
+                                }
+                            });
+                        }
+                    });
+
+                    $('[data-toggle="tooltip"]').tooltip();
+                    $(".widget-scroll").getNiceScroll().resize();
+
+                    //attach atuosizer to textarea's
+                    autosize($('.new-reply-container .answer-contener textarea'));
+
+                    loadAjax('activity');
+
+                    if(comment == true) {
+                    	successNotification(translations.messages.add_reply_success_message);
+                    }
+
+                    if(moveToTop == true) {
+                    	$('html, body').scrollTop(0);
+                    }
+                    loadiframe();
+                },
+                error: function (xhr, status, text) {
+                    console.log(xhr.responseText);
+                    hideLoader();
+                    $("#result-contener").html(xhr.responseText);
+                },
+            });
+            {% endif %}
+        }
+
+        $( function() {
+            {% if typeView=='dashboard' and megreclients|length > 0 %}
+            var mergeClients = {{megreclients|json_encode()|raw}};
+            var acceptMerge = false;
+
+
+            function showdialog(){
+                var tmp = mergeClients.pop();
+                var data = {};
+                var arrayIds = [];
+                arrayIds.push(tmp.authors[0].id);
+                arrayIds.push(tmp.authors[1].id);
+                data.ids = arrayIds;
+
+                $('#modal_merge_accounts div.order').text(tmp.authors[0].order);
+
+                $('#modal_merge_accounts .author0 .author-name-container span').text(tmp.authors[0].name);
+                $('#modal_merge_accounts .author0 .author-merge-purpose div.email').text(tmp.authors[0].email);
+                $('#modal_merge_accounts .author0 .author-merge-purpose div.phone').text(tmp.authors[0].phone);
+
+                $('#modal_merge_accounts .author0 img').attr("src", tmp.authors[0].avatar);
+
+                $('#modal_merge_accounts .author1 .author-name-container span').text(tmp.authors[1].name);
+                $('#modal_merge_accounts .author1 .author-merge-purpose div.email').text(tmp.authors[1].email);
+                $('#modal_merge_accounts .author1 .author-merge-purpose div.phone').text(tmp.authors[1].phone);
+                $('#modal_merge_accounts .author1 img').attr("src", tmp.authors[1].avatar);
+
+                $('#modal_merge_accounts').modal();
+                $(document).one("click", "#button_merge_accounts", function () {
+                    acceptMerge = true;
+                    $.ajax({
+                        async: true,
+                        cache: false,
+                        type: 'POST',
+                        data: data,
+                        dataType: 'json',
+                        url: '{{ path('consumer_merge', {'subdomain': app.user.getInstance.getSubdomain()}) }}',
+                        success: function (data) {
+                            successNotification(translations.messages.accounts_merged);
+                        },
+                        error: function (xhr, status, text) {
+                            console.log('showdialog', xhr);
+                            errorNotification(translations.error_ajax_message);
+                        }
+                    });
+                });
+                $('#modal_merge_accounts').one('hidden.bs.modal', function (e) {
+                    $.ajax({
+                        async: true,
+                        cache: false,
+                        type: 'POST',
+                        data: data,
+                        dataType: 'json',
+                        url: '{{ path('dashboard_ajax_deletemerge', {'subdomain': app.user.getInstance.getSubdomain()}) }}?id='+tmp.id,
+                        success: function (data) { },
+                        error: function (xhr, status, text) {
+                            console.log('hidden.bs.modal', xhr);
+                            errorNotification(translations.error_ajax_message);
+                        }
+                    });
+                    if(mergeClients.length>0) {
+                        showdialog();
+                    } else {
+                        if(acceptMerge){
+                            sendAjax();
+                    	}
+                    }
+                })
+            }
+            showdialog();
+            {% endif %}
+
+            {% if typeView=='dashboard' %}
+                sendAjax();
+            {% elseif typeView=='archive' %}
+                function loadAjaxData() {
+                    var $form = $("#form-archive-posts");
+
+                    var url = '{{ path('archive_index', {'subdomain': app.user.getInstance.getSubdomain()}) }}?' + $form.serialize();
+                    urlDefault = $form.attr("action") + '?' + $form.serialize();
+
+                    if (window.link != url) {
+                        history.pushState({}, document.title, url);
+                    }
+
+                    setTimerList(false, true);
+                }
+
+                $('.show-more-list').each(function(){
+                    $(this).data("text-more", $(this).html());
+                });
+                $('.progress-circle').each(function () {
+                    if($(this).data("lodingCircle") != "1") {
+                        $(this).data("lodingCircle", "1");
+                        var size = 135;
+                        if($(window).width() >= '1000' && $(window).width() <= '1366') {
+                            size = 120;
+                        }
+                        $(this).circleProgress({
+                            value: $(this).data('percent') / 100,
+                            size: size,
+                            startAngle: -Math.PI / -4,
+                            thickness: 6,
+                            lineCap: 'round',
+                            emptyFill: '#ffffff',
+                            animation: false,
+                            fill: {
+                                gradient: ['#30DAEA', '#707FEE']
+                            }
+                        });
+                    }
+                });
+
+                $('[data-toggle="tooltip"]').tooltip();
+                $(".widget-scroll").getNiceScroll().resize();
+
+                //attach atuosizer to textarea's
+                autosize($('.new-reply-container .answer-contener textarea'));
+
+                $('#archive_form_channels').selectpicker({
+                    noneSelectedText: "{{ 'archive.form.choose_channel'|trans }}"
+                }).selectpicker("refresh");
+
+                $('#archive_form_status').selectpicker({
+                    noneSelectedText: "{{ 'archive.form.choose_status'|trans }}"
+                }).selectpicker("refresh");
+
+                $('#archive_form_sentiment').selectpicker({
+                    noneSelectedText: "{{ 'archive.form.choose_mods'|trans }}"
+                }).selectpicker("refresh");
+
+                $('#archive_form_users').selectpicker({
+                    noneSelectedText: "{{ 'archive.form.choose_users'|trans }}"
+                }).selectpicker("refresh");
+
+                $('#archive_form_tags').selectpicker({
+                	width: 'css-width',
+                	noneSelectedText: "{{ 'archive.form.choose_tags'|trans }}",
+				}).selectpicker("refresh");
+
+                $('#archive_form_other').selectpicker({
+                    noneSelectedText: "{{ 'archive.form.choose_other'|trans }}"
+                }).selectpicker("refresh");
+
+                $("#archive_form_date_from, #archive_form_date_to").datepicker({
+                    dateFormat: 'yy-mm-dd',
+                    buttonText: '',
+                });
+
+                var dateFormat = "yy-mm-dd",
+                    from = $("#archive_form_date_from")
+                        .datepicker({
+                            defaultDate: "+1w",
+                            changeMonth: true,
+                            numberOfMonths: 3,
+                        })
+                        .on("change", function () {
+                            to.datepicker("option", "minDate", getDate(this));
+                        }),
+                    to = $("#archive_form_date_to").datepicker({
+                        defaultDate: "+1w",
+                        changeMonth: true,
+                        numberOfMonths: 3,
+                    })
+                        .on("change", function () {
+                            from.datepicker("option", "maxDate", getDate(this));
+                        });
+
+                from.trigger('change');
+                to.trigger('change');
+
+                function getDate(element) {
+                    var date;
+                    try {
+                        date = $.datepicker.parseDate(dateFormat, element.value);
+                    } catch (error) {
+                        date = null;
+                    }
+
+                    return date;
+                }
+
+                $(".change-activity").on("change", function () {
+                    loadAjaxData();
+                });
+                $('#archive_form_channels, #archive_form_status, #archive_form_sentiment, #archive_form_users, #archive_form_tags, #archive_form_other').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+                    loadAjaxData();
+                });
+
+            {% endif %}
+
+
+            {% if typeView=='dashboard' %}
+            $(document).on("click", ".pagination-change", function(){
+                urlDefault = $(this).attr('href');
+                clearTimeout(listAjaxtimer);
+                if(listAjax && listAjax.readyState != 4){
+                    listAjax.abort();
+                }
+                sendAjax(false, true);
+                return false;
+            });
+            {% elseif typeView=='archive' %}
+            $(document).on("click", ".pagination-change", function(){
+                urlDefault = $(this).data('href');
+                clearTimeout(listAjaxtimer);
+                if(listAjax && listAjax.readyState != 4){
+                    listAjax.abort();
+                }
+                if(window.link!=$(this).attr('href')){
+                    history.pushState({}, document.title, $(this).attr('href'));
+                }
+                sendAjax(false, true);
+                return false;
+            });
+            {% endif %}
+
+            $(document).off("click", ".change-postSentiment").on("click", ".change-postSentiment", function() {
+                var element = $(this);
+				var container = element.parent();
+				container.prev().remove();
+
+				container
+					.closest('.dropdown')
+					.prepend(element.find('span').data('template'))
+					.closest('.user-image').find('img')
+					.removeClass('sentiment-0 sentiment-1 sentiment-2')
+					.addClass(element.find('span').data('type'));
+
+                $.ajax({
+                    async: true,
+                    cache: false,
+                    type: 'POST',
+                    url: $(this).data('url')
+                });
+                return false;
+            });
+
+            /*Owners Tooltip*/
+            $(document).on("click", ".change-owner", function() {
+                $(this).parent().removeClass('show-owners-block');
+                $.ajax({
+                    async: true,
+                    cache: false,
+                    type: 'POST',
+                    url: $(this).data('url'),
+                    success: function (data) {
+                        if (data === 'ok') {
+                            successNotification(translations.messages.change_post_owner);
+                            sendAjax();
+                        }
+                    },
+                    error: function (xhr, status, text) {
+                        console.log('change-owner', xhr);
+                        errorNotification(translations.error_ajax_message);
+                    }
+                });
+                return false;
+            });
+
+            $(document).on("click", ".send-email-out", function(e){
+                var sEmail = $(this).prev().val();
+                var itemId = $(this).prev().data('id');
+                var data = {
+                    email: sEmail,
+                    item: itemId
+                };
+                if (validateEmail(sEmail)) {
+                    $(this).parents('.change-owners-box').find('.change-owner-container').attr("src", "{{ asset('img/redirect.png') }}");
+                    $(this).parent().removeClass('show-owners-block');
+                    $.ajax({
+                        type: "POST",
+                        data: data,
+                        dataType: 'json',
+                        url: '{{ path('dashboard_help_email', {'subdomain': app.user.getInstance.getSubdomain()}) }}',
+                        success: function (data) {
+                            if (data === 'ok') {
+                                $('#hide-post').modal({
+                                    backdrop: 'static',
+                                    keyboard: false
+                                });
+                                $(document).on("click", "#close-post", function() {
+                                    $("#post-" + itemId).remove();
+                                    $('body > .tooltip').remove();
+                                    $.ajax({
+                                        async: true,
+                                        cache: false,
+                                        type: 'POST',
+                                        data: {'id':itemId},
+                                        url: '{{path('dashboard_close_post',{'subdomain': app.user.getInstance.getSubdomain()})}}',
+                                        success: function (html) {
+                                            loadActivityList();
+                                        },
+                                        error: function (xhr, status, text) {
+                                            console.log('send-email-out', xhr);
+                                            errorNotification(translations.error_ajax_message);
+                                        }
+                                    });
+                                    return false;
+                                });
+                            }
+                        }
+                    });
+                }
+                else {
+                    errorNotification(translations.messages.invalid_email_address);
+                    e.preventDefault();
+                }
+                return false;
+            });
+
+            $(document).on("click", ".change-owner-container, .close-owners-content",function(){
+                var box = $(this).parents('.change-owners-box');
+                var boxContent = box.find('.owners-content');
+                var fwdBoxContenr = boxContent.find('.forward-post-note-box');
+
+                boxContent.toggleClass('show-owners-block');
+                fwdBoxContenr.removeClass('d-flex');
+                fwdBoxContenr.find('textarea.forward-post-note-text').val('');
+
+                if (boxContent.find('.owners-content').hasClass('show-owners-block')) {
+                	box.find('.change-owner-container').attr("src", "{{ asset('img/redirect-active.png') }}");
+                } else {
+                	box.find('.change-owner-container').attr("src", "{{ asset('img/redirect.png') }}");
+                }
+            });
+            /*Owners Tooltip End*/
+
+            // Close post
+            $(document).on("click", ".closepost", function(){
+                var id = $(this).data("id");
+                $.ajax({
+                    async: true,
+                    cache: false,
+                    type: 'POST',
+                    data: { 'id': id },
+                    url: '{{ path('dashboard_close_post',{ 'subdomain': app.user.getInstance.getSubdomain() }) }}',
+                    success: function (html) {
+                        loadActivityList();
+                        successNotification('{{ 'messages.add_closepost_success_message'|trans({}, 'UserBundle') }}')
+                        $('#post-' + id).remove();
+                        $('body > .tooltip').remove();
+                    },
+                    error: function (xhr, status, text) {
+                        console.log('closepost', xhr);
+                        hideLoader();
+                        errorNotification('{{ 'error_ajax_message'|trans({}, 'messages') }}')
+                    },
+                });
+                return false;
+            });
+
+            $(document).on("click", ".show-more-list", function() {
+                var e = $(this);
+
+                if(e.data('text-hide') == e.html()) {
+                    e.data("start",0).html(e.data("text-more"));
+                    e.parent().prev().empty();
+                } else {
+                    var data ={
+                        'id': e.data('id'),
+                        'start': e.data('start'),
+                        'notid': e.data('notid'),
+                    };
+
+                    $.ajax({
+                        async: true,
+                        cache: false,
+                        type: 'POST',
+                        data: data,
+                        dataType: 'json',
+                        url: '{{path("dashboard_loadmore",{'subdomain': app.user.getInstance.getSubdomain()})}}',
+                        beforeSend: function(xhr, settings) {
+                            showLoader()
+                        },
+                        complete: function() {
+                            hideLoader();
+                        },
+                        success: function (response) {
+                            if(response['more']!=1){
+                                e.html(e.data("text-hide"));
+                            }
+                            e.data('start',response['start']);
+                            e.parent().prev().append(response['html']);
+                        },
+                        error: function (xhr, status, text) {
+                            console.log('show-more-list', xhr);
+                            hideLoader();
+                            errorNotification('{{ 'error_ajax_message'|trans({}, 'messages') }}')
+                        },
+                    });
+                }
+                return false;
+            });
+
+            $(document).on('autosize:resized', function(e) {
+				var $this = $(e.target);
+				var nextPost = $this.closest('.post-row-top').next();
+
+				if($this.closest('.new-reply-container').hasClass('show')) {
+					//add margin top to next post row if reply is visible
+    				nextPost.css({
+    					'margin-top': $this.height(),
+    				})
+				}
+            });
+
+            {# Obsługa dodawania odpowiedzi #}
+            $(document).on("click", ".addreply", function() {
+                var id = $(this).data("id");
+                var e = $(this);
+
+                clearTimeout(listAjaxtimer);
+                if(listAjax && listAjax.readyState != 4) {
+                    listAjax.abort();
+                }
+
+                var replyContainer = $("#post-" + id + " .new-reply-container");
+                var textarea = $("#post-" + id + " .answer-contener .text:not(.text2) textarea");
+                var sendButton = $("#post-" + id + " .answer-contener .text:not(.text2) .submit-reply");
+
+                replyContainer.addClass('show').show();
+                autosize.update(textarea);
+               	textarea.attr('placeholder', '').focus();
+
+				//close reaply widget
+               	textarea.off().on({
+					keyup: function(e) {
+                        if (e.keyCode == 27) {
+							textarea.val('');
+	                        //remove margin top of next row if reply widget is hidden
+                          	replyContainer.hide().removeClass('show').closest('.post-row-top').next().css({
+                        		'margin-top': 0,
+                          	});
+                          	autosize.update(textarea);
+
+                          	if($(".answer-contener .text:visible").length == 0) {
+                          		setTimerList();
+							}
+						}
+               		},
+               		focus: function(e) {
+                   		textarea.attr('placeholder', '').removeClass('text-right');
+                   	},
+               		blur: function(e) {
+                   		if($.trim(textarea.val()) == '') {
+                           	textarea.addClass('text-right').attr('placeholder', textarea.data('placeholder'));
+	                   	}
+               		},
+               	});
+
+               	sendButton.off().on('click', function() {
+               		if($.trim(textarea.val()) == '') {
+               			errorNotification(translations.messages.empty_comment_value);
+                    } else {
+                        $.ajax({
+                            async: true,
+                            cache: false,
+                            type: 'POST',
+                            data: { 'id': id, 'text': textarea.val() },
+                            url: '{{ path('dashboard_add_comment', {'subdomain': app.user.getInstance.getSubdomain()}) }}',
+                            beforeSend: function(xhr, settings) {
+                                showLoader();
+                            },
+                            success: function (html) {
+                                if(html == 'ok') {
+                                    sendAjax(true);
+                                } else {
+                                    hideLoader();
+                                    errorNotification('{{ 'error_ajax_message'|trans({}, 'messages') }}')
+                                }
+
+                                if($(".answer-contener .text:visible").length == 0) {
+                                    setTimerList();
+                                }
+                            },
+                            error: function (xhr, status, text) {
+                                console.log('addreply', xhr);
+                                hideLoader();
+                                errorNotification('{{ 'error_ajax_message'|trans({}, 'messages') }}')
+                            },
+                        });
+                    }
+               		return false;
+               	});
+               	return false;
+            });
+            {# Koniec obsługi dodawania odpowiedzi #}
+
+            /** reakcje **/
+
+            $(document).on("click", ".reactions-tab .add-reaction", function(e) {
+                e.preventDefault();
+                var type = $(this).data('type');
+                var url = $(this).find('img').attr("src");
+                var id = $(this).data('id');
+                var reactionButton = $(this).parent().prev();
+
+                $.ajax({
+                    async: true,
+                    cache: false,
+                    type: 'POST',
+                    data: {
+                    	'id':id,
+                    	'type': type,
+                    	'closePost': false
+                    },
+                    url: '{{ path('dashboard_add_reaction',{'subdomain': app.user.getInstance.getSubdomain()}) }}',
+                    success: function () {
+                        reactionButton.find('img').attr('src', url);
+                        reactionButton.addClass('active');
+                    },
+                    error: function (xhr, status, text) {
+                        console.log('reactions-tab', xhr);
+                        hideLoader();
+
+                        if(status != 'abort') {
+                        	errorNotification(translations.error_ajax_message);
+                        }
+                    },
+                });
+            });
+
+            $(document).on("click", "a.add-reaction-head",function(e) {
+                e.preventDefault();
+                var type = $(this).data('type');
+                var url = $(this).data('head');
+                var id = $(this).data('id');
+                var reactionButton = $(this);
+                if(reactionButton.hasClass('active')){
+                    $.ajax({
+                        async: true,
+                        cache: false,
+                        type: 'POST',
+                        data: {
+                            'id':id,
+                            'closePost': false
+                        },
+                        url: '{{ path('dashboard_remove_reaction',{'subdomain': app.user.getInstance.getSubdomain()}) }}',
+                        success: function () {
+                            reactionButton.find('img').attr('src', url);
+                            reactionButton.removeClass('active');
+                        },
+                        error: function (xhr, status, text) {
+                            console.log(xhr);
+                            hideLoader();
+                            if(status != 'abort') {
+                            	errorNotification(translations.error_ajax_message);
+                            }
+                        },
+                    });
+                }
+            });
+
+            {# notatki #}
+            $(document).on("click", ".add-note", function() {
+                var id = $(this).data("author");
+                var idPost = $(this).data("post");
+                return false;
+            });
+            {# koniec notatki #}
+
+            {# >>>>>>> notatki i tagi dla postów  <<<<<<<< #}
+            $(document).on("click", "#notes-or-tags-confirm", function() {
+                var postId = $(this).data('post');;
+                var ajaxUrl = '{{path("note_tags_post_add",{'subdomain': app.user.getInstance.getSubdomain(), 'post':"__postId__"  })}}' ;
+                ajaxUrl = ajaxUrl.replace("__postId__", postId);
+                var noteText = "";
+                var noteObject = $('textarea[name="form_modal_post_note"]');
+                if (noteObject.length > 0){
+                    noteText = noteObject[0].value;
+                }
+                var postTags = [];
+                jQuery('.modal-tags-body input[type="checkbox"]').each(function( index ) {
+                    if ($(this).is(':checked')){
+                        postTags.push($( this ).val());
+                    }
+                });
+
+                if ($.trim(jQuery('#new-tag-input')) && ($.trim(jQuery('#new-tag-input').val()) != "")  && (jQuery.inArray($.trim(jQuery('#new-tag-input').val()), postTags) < 0)) {
+                    postTags.push($.trim(jQuery('#new-tag-input').val()));
+                }
+
+                $.ajax({
+                    async: true,
+                    cache: false,
+                    type: 'POST',
+                    data: {
+                        'postTags': postTags,
+                        'postNoteText': noteText
+                    },
+                    url: ajaxUrl,
+                    success: function (obj) {
+                            var newPostTagsHTML = "";
+                            jQuery.each( obj.currentListPostTags, function( i, val ) {
+                                newPostTagsHTML += '<div class="btn btn-outline-primary mr-l mb-1"> <span> ' + val + ' </span> </div>'
+                            });
+
+                            $('.activity-tags-list[data-postid="' + postId + '"]').html(newPostTagsHTML);
+
+                            if (obj.note) {
+                            	$('.activity-tags-list[data-postid="' + postId + '"]')
+                            		.siblings('.notes-attachments')
+                            		.find('.show-notes')
+                            		.removeClass('hide-notes');
+                            }
+                    },
+                	error: function (xhr, status, text) {
+                        console.log('add notes tags', xhr);
+                        errorNotification(translations.error_ajax_message);
+                    }
+                });
+
+                return false;
+            });
+
+            {# -------- usuwanie tagu z dashboardu ---------- #}
+            $(document).on("mouseenter", ".dashboard-post-tag-custom-item", function() {
+                $(this).find('.dashboard-post-tag-custom-item-delete').css("display","block");
+            });
+
+            $(document).on("mouseleave", ".dashboard-post-tag-custom-item", function() {
+                $(this).find('.dashboard-post-tag-custom-item-delete').css("display","none");
+            });
+
+            $(document).on("click", ".dashboard-post-tag-custom-item-delete", function() {
+                var parentTagObject = $(this).parent('.dashboard-post-tag-custom-item');
+                var postTagId = $(this).data('posttag');
+                var postId = $(this).data('post');
+
+                parentTagObject.remove();
+
+            });
+            {# -------- koniec usuwanie tagu z dashboardu ---------- #}
+
+            {# -------- wybieranie tagu z panelu ---------- #}
+            $(document).on("click", ".dashboard-post-tag-item", function() {
+                var isActive = $(this).hasClass( "active");
+                if (isActive == true) {
+                    $(this).removeClass("active");
+                    $(this).find('input.predesign-tag-checkbox').prop('checked', false);
+                } else {
+                    $(this).addClass("active");
+                    $(this).find('input.predesign-tag-checkbox').prop('checked', true);
+                }
+                return false;
+            });
+            {# -------- koniec wybieranie tagu z panelu ---------- #}
+
+
+            {# -------- forward z notatką---------- #}
+            $(document).on("click", ".show-forward-post-note-box", function() {
+                var ownerId = $(this).attr('data-ownerid');
+                var postId = $(this).attr('data-postid');
+                var noteBox = $('.forward-post-note-box[data-ownerid="' + ownerId + '"][data-postid="' + postId + '"]');
+
+                noteBox.find('textarea.forward-post-note-text').val('');
+
+                if (noteBox.hasClass('d-flex')) {
+                    $('.forward-post-note-box[data-ownerid="' + ownerId + '"][data-postid="' + postId + '"]').removeClass('d-flex');
+                } else {
+                    $('.forward-post-note-box[data-ownerid="' + ownerId + '"][data-postid="' + postId + '"]').addClass('d-flex');
+                }
+            });
+
+            /* Change owner with note */
+            $(document).on("click", ".forward-post-note-button", function() {
+                var ownerId = $(this).attr('data-ownerid');
+                var postId = $(this).attr('data-postid');
+                var noteText = $('.forward-post-note-text[data-ownerid="' + ownerId + '"][data-postid="' + postId + '"]').val();
+
+                if ($.trim(noteText) == '') {
+                	errorNotification(translations.messages.empty_forward_value);
+                } else {
+                    $.ajax({
+                        async: true,
+                        cache: false,
+                        type: 'POST',
+                        data: {
+                            'postNoteText': noteText,
+                        },
+                        url: $(this).data('url'),
+                        success: function (data) {
+                            if (data === 'ok') {
+                            	var noteBox = $('.forward-post-note-box[data-ownerid="' + ownerId + '"][data-postid="' + postId + '"]');
+
+                                noteBox.removeClass('d-flex').find('textarea.forward-post-note-text').val('');
+                                noteBox.closest('.owners-content').toggleClass('show-owners-block');
+                                successNotification(translations.messages.change_post_owner);
+                                sendAjax();
+                            }
+                        },
+                        error: function (xhr, status, text) {
+                            console.log('change-owner', xhr);
+                            errorNotification(translations.error_ajax_message);
+                        }
+                    });
+                }
+                return false;
+            });
+            {# -------- koniec forward z notatką---------- #}
+
+            {# -------- dodawanie noych postTagów ---------- #}
+            $(document).on("click", ".add-new-custom-post-type",function(){
+                    $(this).addClass("btn-outline-primary");
+
+                    var input = $(this).find("input");
+                    input.css("display","block");
+                    var iconAdd = $(this).find("i.la-plus");
+
+                    input.removeClass("d-none").focus();
+                    iconAdd.css("display","none");
+            });
+
+            $(document).on("keyup", ".add-new-custom-post-type input",function(e) {
+                var iconAdd = $(".add-new-custom-post-type .la-plus");
+
+                if(e.keyCode == 13)
+                {
+                    e.stopPropagation();
+                    $(this).parents(".add-new-custom-post-type").removeClass("btn-outline-primary");
+                    var customPostsBox = $('.modal-custom-post-tags');
+                    var shouldAddNewTag =  true;
+                    var newTagName = $.trim( $(this).val().toLowerCase());
+
+                    //custom tags
+                    $('.dashboard-post-tag-custom-item input').each(function( index ) {
+                        if ($( this ).val() == newTagName) {
+                            shouldAddNewTag = false;
+                            return false;
+                        }
+                    });
+
+                    //predesign tags
+                    $('.dashboard-post-tag-item input').each(function( index ) {
+                        if ($( this ).val() == newTagName) {
+                            if (!$(this).parent(".dashboard-post-tag-item").hasClass('active')) {
+                                $(this).parent(".dashboard-post-tag-item").addClass('active');
+                                $(this).prop('checked', true);
+                            }
+                            shouldAddNewTag = false;
+                            return false;
+                        }
+                    });
+
+                    if (shouldAddNewTag == true && newTagName!= "") {
+                        customPostsBox.append('<div class="btn dashboard-post-tag-custom-item"><span>' + newTagName + '</span><input type="checkbox" class="custom-tag-checkbox" value="' + newTagName + '"  name="PostTags[]" hidden checked > </div>');
+                    }
+
+                    $(this).val('');
+                    $(this).css("display","none");
+                    iconAdd.css("display","block");
+                }
+                else if(e.keyCode == 27)
+                {
+                    e.stopPropagation();
+                    $(this).parents(".add-new-custom-post-type").removeClass("btn-outline-primary");
+                    $(this).val('');
+                    $(this).css("display","none");
+                    iconAdd.css("display","block");
+
+                }
+                return false;
+            });
+            {# -------- koniec dodawanie noych postTagów ---------- #}
+
+
+            {# -------- wyswietlanie notatek i tagow - przejscie po klikcieciu reply ---------- #}
+
+            $(document).on("click", "#notes-or-tags-reply", function() {
+                //button reply to add
+                $(this).attr("id","notes-or-tags-confirm");
+                $(this).attr("data-dismiss","modal");
+                $(this).html($(this).data('add-text'));
+                //tags section
+                $('.modal-tags-body .new-tag-content').removeClass('hide');
+                $('.modal-tags-body .dashboard-post-tag-custom-item-delete').removeClass('hide');
+                $('.modal-tags-body .predesign-tags').removeClass('read-mode');
+                $('.modal-tags-body .predesign-tags .dashboard-post-tag-item-view').addClass('dashboard-post-tag-item');
+                $('.modal-tag-title').html( $('.modal-tag-title').data('add-text'));
+                $('.modal-note-title').html( $('.modal-note-title').data('add-text'));
+                $('.add-new-note-input').removeClass('read-mode');
+            });
+
+            {# -------- koniec wyswietlanie notatek i tagow ---------- #}
+            {# >>>>>>> koniec - notatki i tagi dla postów  <<<<<<<< #}
+        });
+
+        $( function() {
+			//prevent from open accordion if count value is 0
+            $(document).on('show.bs.collapse', function(e) {
+            	if (Number($(e.target)
+    	    			.prev()
+    	    			.find(".card-title span[class$='count']")
+    	    			.html()) == 0) {
+    				return false;
+    			}
+
+            	//prevent from open accordion if input value == ''
+            	var input = $(e.target).prev().find("input:not(.hidden)");
+            	var val = $.trim(input.val());
+    			if (val == '' && input.is(":focus")) {
+        			return false;
+    			}
+            });
+
+            /** load ajax before tab show content - shopping tab on dashboard activity **/
+            $(document).on('show.bs.tab', function(e) {
+				var target = $(e.target);
+				if(target.data('shopping') != undefined && target.data('shopping') == true) {
+					var contentDiv = $(target.attr('href'));
+					if (contentDiv.html().length == 0) {
+						e.preventDefault();
+						$.ajax({
+                            async: true,
+                            cache: false,
+                            type: 'GET',
+                            url: target.data('url'),
+                            beforeSend: function(xhr, settings) {
+                                showLoader();
+                            },
+                            success: function (html) {
+                            	contentDiv.html(html);
+                            	$('.suggested-circle').each(function () {
+                                    if($(this).data("lodingCircle") != "1") {
+                                        $(this).data("lodingCircle", "1");
+                                        $(this).circleProgress({
+                                            value: 100, //$(this).data('percent') / 100,
+                                            size: 55,
+                                            startAngle: -Math.PI / -4,
+                                            thickness: 4,
+                                            lineCap: 'round',
+                                            emptyFill: '#ffffff',
+                                            fill: {
+                                                gradient: ['#30DAEA', '#707FEE']
+                                            }
+                                        });
+                                    }
+                                });
+                            	$(e.target).tab('show');
+                            	$('[data-toggle="tooltip"]').tooltip();
+                            },
+                            error: function (xhr, status, text) {
+                                console.log('show.bs.tab', xhr.responseText);
+                                hideLoader();
+                                errorNotification(translations.error_ajax_message);
+                            },
+                        });
+					}
+				}
+            });
+
+            //show attachment popup
+            $(document).on('click', '.show-multiple-attachments', function(e) {
+				$(this).closest('.show-attachments').siblings('.activity-show-attachments').show();
+				$('body > .tooltip').remove(); //remove tooltip that left after popup show'ed
+				return false;
+            });
+
+            //hide attachment popup
+            $(document).on('click', '.close-activity-attachments-content', function(e) {
+				$(this).closest('.activity-show-attachments').hide();
+				return false;
+            });
+        });
+    </script>
+{% include 'UserBundle:Dashboard:activity-chart.html.twig' %}
+{% endblock %}
